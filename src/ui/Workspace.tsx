@@ -79,6 +79,8 @@ export function Workspace() {
         </main>
 
         <aside className="panel min-h-0 overflow-y-auto">
+          <Inspector />
+          <GradientEditor />
           <Section title="Palette">
             <div className="grid gap-1">
               {PALETTES.slice(0, 8).map((p) => (
@@ -88,6 +90,7 @@ export function Workspace() {
               ))}
             </div>
           </Section>
+
           <Section title="Optics">
             <Row label="Bloom">
               <Toggle
