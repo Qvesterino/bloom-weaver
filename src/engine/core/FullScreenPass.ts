@@ -23,6 +23,14 @@ export class FullScreenPass {
   }
 
   render(renderer: THREE.WebGLRenderer, target: THREE.WebGLRenderTarget | null): void {
+    if (import.meta.env.DEV && target) {
+      const outs = (target as any).textures ?? [target.texture];
+      for (const [name, u] of Object.entries(this.material.uniforms)) {
+        if (outs.includes((u as any).value)) {
+          console.error(`[feedback] pass writes target while sampling it via ${name}`, (this.material as any).name);
+        }
+      }
+    }
     const prevTarget = renderer.getRenderTarget();
     renderer.setRenderTarget(target);
     renderer.render(this.scene, this.camera);
