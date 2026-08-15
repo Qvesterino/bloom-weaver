@@ -248,15 +248,20 @@ export class Engine {
     };
   }
 
+  private lastResizeKey = "";
+
   private resize(): void {
     const { width, height } = this.canvasSize();
     const quality = this.project.viewport.quality;
     const dpr = Math.min(window.devicePixelRatio || 1, QUALITY_DPR[quality]);
+    const internalScale = this.project.viewport.renderScale * QUALITY_SCALE[quality];
+    const key = `${width}x${height}@${dpr}x${internalScale}:${quality}`;
+    if (key === this.lastResizeKey) return;
+    this.lastResizeKey = key;
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    const internalScale = this.project.viewport.renderScale * QUALITY_SCALE[quality];
     this.optics.allocate(
       Math.floor(width * dpr * internalScale),
       Math.floor(height * dpr * internalScale),
