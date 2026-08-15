@@ -22,7 +22,15 @@ export interface EngineStats {
   drawCalls: number;
   renderScale: number;
   loopTime: number;
+  /** GPU resource accounting straight from the renderer. */
+  geometries: number;
+  textures: number;
+  programs: number;
+  triangles: number;
+  points: number;
 }
+
+export type ContextState = "created" | "lost" | "restored" | "failed";
 
 const QUALITY_SCALE: Record<QualityMode, number> = {
   draft: 0.6,
@@ -40,7 +48,9 @@ export interface EngineCallbacks {
   onLoopTime?: (t: number) => void;
   onCameraMoved?: (position: { x: number; y: number; z: number }) => void;
   onError?: (message: string) => void;
+  onContextState?: (state: ContextState, message: string) => void;
 }
+
 
 /**
  * Renderer-owned runtime. Owns the animation loop, the GPU resources and every
