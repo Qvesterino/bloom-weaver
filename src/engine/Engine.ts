@@ -32,6 +32,8 @@ const QUALITY_SCALE: Record<QualityMode, number> = {
 const QUALITY_LEVELS: Record<QualityMode, number> = { draft: 3, interactive: 5, quality: 5 };
 const QUALITY_DPR: Record<QualityMode, number> = { draft: 1, interactive: 1.5, quality: 2 };
 const DRAFT_PARTICLE_SCALE = 0.4;
+/** Live-preview budget. Exports use the authored counts. */
+const LIVE_PARTICLE_CAP = 65536;
 
 export interface EngineCallbacks {
   onStats?: (stats: EngineStats) => void;
@@ -193,7 +195,8 @@ export class Engine {
   private effectiveCount(count: number): number {
     const scale =
       !this.exporting && this.project.viewport.quality === "draft" ? DRAFT_PARTICLE_SCALE : 1;
-    return clampCount(Math.floor(count * scale));
+    const capped = this.exporting ? count : Math.min(count, LIVE_PARTICLE_CAP);
+    return clampCount(Math.floor(capped * scale));
   }
 
   private rebuildSystemCounts(): void {
@@ -352,6 +355,10 @@ export class Engine {
       if (this.disposed) return;
       this.rafId = requestAnimationFrame(tick);
       if (this.exporting) return;
+      if (document.hidden) {
+        this.lastTime = now;
+        return;
+      }
       const raw = (now - this.lastTime) / 1000;
       this.lastTime = now;
       const dt = Math.min(Math.max(raw, 0.0005), 1 / 20);
