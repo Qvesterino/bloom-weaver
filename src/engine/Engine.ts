@@ -75,13 +75,7 @@ export class Engine {
     private callbacks: EngineCallbacks = {},
   ) {
     this.project = project;
-    this.renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias: false,
-      alpha: true,
-      powerPreference: "high-performance",
-      preserveDrawingBuffer: false,
-    });
+    this.renderer = createRenderer(canvas);
     this.renderer.autoClear = false;
     this.renderer.setClearColor(0x000000, 0);
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
