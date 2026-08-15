@@ -489,6 +489,7 @@ export class Engine {
       this.camera.updateProjectionMatrix();
       this.rebuildSystemCounts();
       this.resetSimulation();
+      this.lastResizeKey = "";
       this.resize();
     }
   }
@@ -506,6 +507,9 @@ export class Engine {
     this.grid.geometry.dispose();
     (this.grid.material as THREE.Material).dispose();
     this.renderer.dispose();
+    // release the GPU context immediately; otherwise repeated mounts exhaust the
+    // browser's WebGL context budget and the whole tab grinds to a halt.
+    this.renderer.forceContextLoss();
   }
 }
 
