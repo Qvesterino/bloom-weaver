@@ -57,7 +57,7 @@ interface SliderProps {
   max: number;
   step?: number;
   onChange: (v: number) => void;
-  onCommit?: () => void;
+  onCommit?: (() => void) | undefined;
   precision?: number;
   suffix?: string;
 }
@@ -265,7 +265,7 @@ export function ColorInput({
 }: {
   value: string;
   onChange: (v: string) => void;
-  onCommit?: () => void;
+  onCommit?: (() => void) | undefined;
 }) {
   const ref = useRef<HTMLInputElement>(null);
   return (
@@ -305,7 +305,7 @@ export function Vector3Input({
 }: {
   value: { x: number; y: number; z: number };
   onChange: (axis: "x" | "y" | "z", v: number) => void;
-  onCommit?: () => void;
+  onCommit?: (() => void) | undefined;
   step?: number;
 }) {
   return (
@@ -335,11 +335,11 @@ export function NumberInput({
 }: {
   value: number;
   onChange: (v: number) => void;
-  onCommit?: () => void;
-  step?: number;
-  prefix?: string;
-  min?: number;
-  max?: number;
+  onCommit?: (() => void) | undefined;
+  step?: number | undefined;
+  prefix?: string | undefined;
+  min?: number | undefined;
+  max?: number | undefined;
 }) {
   const [text, setText] = useState<string | null>(null);
   const dragging = useRef<{ startX: number; startValue: number } | null>(null);
@@ -409,7 +409,7 @@ export function TextInput({
 }: {
   value: string;
   onChange: (v: string) => void;
-  onCommit?: () => void;
+  onCommit?: (() => void) | undefined;
   placeholder?: string;
 }) {
   return (
