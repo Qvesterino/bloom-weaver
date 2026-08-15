@@ -32,6 +32,8 @@ const QUALITY_SCALE: Record<QualityMode, number> = {
 const QUALITY_LEVELS: Record<QualityMode, number> = { draft: 3, interactive: 5, quality: 5 };
 const QUALITY_DPR: Record<QualityMode, number> = { draft: 1, interactive: 1.5, quality: 2 };
 const DRAFT_PARTICLE_SCALE = 0.4;
+/** Live-preview budget. Exports use the authored counts. */
+const LIVE_PARTICLE_CAP = 65536;
 
 export interface EngineCallbacks {
   onStats?: (stats: EngineStats) => void;
@@ -75,13 +77,7 @@ export class Engine {
     private callbacks: EngineCallbacks = {},
   ) {
     this.project = project;
-    this.renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias: false,
-      alpha: true,
-      powerPreference: "high-performance",
-      preserveDrawingBuffer: false,
-    });
+    this.renderer = createRenderer(canvas);
     this.renderer.autoClear = false;
     this.renderer.setClearColor(0x000000, 0);
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
@@ -199,7 +195,8 @@ export class Engine {
   private effectiveCount(count: number): number {
     const scale =
       !this.exporting && this.project.viewport.quality === "draft" ? DRAFT_PARTICLE_SCALE : 1;
-    return clampCount(Math.floor(count * scale));
+    const capped = this.exporting ? count : Math.min(count, LIVE_PARTICLE_CAP);
+    return clampCount(Math.floor(capped * scale));
   }
 
   private rebuildSystemCounts(): void {
@@ -248,15 +245,20 @@ export class Engine {
     };
   }
 
+  private lastResizeKey = "";
+
   private resize(): void {
     const { width, height } = this.canvasSize();
     const quality = this.project.viewport.quality;
     const dpr = Math.min(window.devicePixelRatio || 1, QUALITY_DPR[quality]);
+    const internalScale = this.project.viewport.renderScale * QUALITY_SCALE[quality];
+    const key = `${width}x${height}@${dpr}x${internalScale}:${quality}`;
+    if (key === this.lastResizeKey) return;
+    this.lastResizeKey = key;
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    const internalScale = this.project.viewport.renderScale * QUALITY_SCALE[quality];
     this.optics.allocate(
       Math.floor(width * dpr * internalScale),
       Math.floor(height * dpr * internalScale),
@@ -353,6 +355,10 @@ export class Engine {
       if (this.disposed) return;
       this.rafId = requestAnimationFrame(tick);
       if (this.exporting) return;
+      if (document.hidden) {
+        this.lastTime = now;
+        return;
+      }
       const raw = (now - this.lastTime) / 1000;
       this.lastTime = now;
       const dt = Math.min(Math.max(raw, 0.0005), 1 / 20);
@@ -490,6 +496,7 @@ export class Engine {
       this.camera.updateProjectionMatrix();
       this.rebuildSystemCounts();
       this.resetSimulation();
+      this.lastResizeKey = "";
       this.resize();
     }
   }
@@ -507,6 +514,9 @@ export class Engine {
     this.grid.geometry.dispose();
     (this.grid.material as THREE.Material).dispose();
     this.renderer.dispose();
+    // release the GPU context immediately; otherwise repeated mounts exhaust the
+    // browser's WebGL context budget and the whole tab grinds to a halt.
+    this.renderer.forceContextLoss();
   }
 }
 
@@ -515,4 +525,30 @@ function gradientFor(project: Project, matter: MatterObject) {
   const maxIndex = mode === "single" ? 0 : mode === "dual" ? 1 : 2;
   const index = Math.min(matter.config.gradientIndex, maxIndex);
   return project.color.gradients[index] ?? project.color.gradients[0];
+}
+
+/**
+ * Robust WebGL2 context creation. Some browsers/tabs refuse a context with the
+ * preferred attributes (or have exhausted their context budget), so we retry
+ * with progressively cheaper attributes instead of hard-crashing the app.
+ */
+function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
+  const variants: THREE.WebGLRendererParameters[] = [
+    { antialias: false, alpha: true, powerPreference: "high-performance" },
+    { antialias: false, alpha: true, powerPreference: "default" },
+    { antialias: false, alpha: false, powerPreference: "default", failIfMajorPerformanceCaveat: false },
+  ];
+  let lastError: unknown = null;
+  for (const params of variants) {
+    try {
+      return new THREE.WebGLRenderer({ canvas, preserveDrawingBuffer: false, ...params });
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw new Error(
+    `WebGL2 is unavailable in this browser tab. Close other 3D tabs and reload. (${
+      lastError instanceof Error ? lastError.message : String(lastError)
+    })`,
+  );
 }
