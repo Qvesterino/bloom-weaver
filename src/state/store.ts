@@ -199,8 +199,11 @@ export const useEditor = create<EditorState>((set, get) => ({
     ),
 
   addObject: (type, kind) => {
-    get().commit((p) => ({ ...p, objects: [...p.objects, buildObject(type, kind)] }), `Add ${kind}`);
+    const obj = buildObject(type, kind);
+    get().commit((p) => ({ ...p, objects: [...p.objects, obj] }), `Add ${kind}`);
+    set({ selectedId: obj.id });
   },
+
 
 
   deleteObject: (id) =>
