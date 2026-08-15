@@ -117,7 +117,21 @@ export class Engine {
     this.optics = new Optics(size.width, size.height);
     this.syncSystems();
     this.applyCameraConfig(true);
+    canvas.addEventListener("webglcontextlost", this.onContextLost);
+    canvas.addEventListener("webglcontextrestored", this.onContextRestored);
+    this.callbacks.onContextState?.("created", "WebGL2 context created");
   }
+
+  private onContextLost = (event: Event) => {
+    event.preventDefault();
+    this.callbacks.onContextState?.("lost", "WebGL context lost — GPU released the drawing buffer");
+    this.stop();
+  };
+
+  private onContextRestored = () => {
+    this.callbacks.onContextState?.("restored", "WebGL context restored");
+  };
+
 
   /* ------------------------------------------------------------------ state */
 
