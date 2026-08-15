@@ -25,6 +25,11 @@ export function Workspace() {
           Matter<span className="text-primary">Field</span>
         </h1>
         <span className="label-xs">{project.name}</span>
+        {activeRecipe ? (
+          <span className="rounded border border-primary/50 bg-primary/10 px-1.5 py-0.5 text-[0.6rem] text-primary">
+            editing recipe: {activeRecipe}
+          </span>
+        ) : null}
         <div className="ml-auto flex items-center gap-1.5">
           <Button variant="outline" size="xs" onClick={undo}>
             Undo
@@ -152,6 +157,7 @@ export function Workspace() {
               />
             </Row>
           </Section>
+          <Diagnostics />
         </aside>
       </div>
     </div>
