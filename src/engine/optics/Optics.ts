@@ -195,8 +195,11 @@ export class Optics {
       bu["uThreshold"]!.value = optics.bloom.threshold;
       bu["uSoftness"]!.value = optics.bloom.softness;
       const first = this.levels[0]!;
-      this.brightPass.render(renderer, first.b);
-      this.blur(renderer, first.b.texture, first, optics.bloom.radius);
+      // Bright pass must not land in `first.b`: blur() writes its horizontal
+      // stage there, which would sample and render the same texture (feedback loop).
+      this.brightPass.render(renderer, first.a);
+      this.blur(renderer, first.a.texture, first, optics.bloom.radius);
+
       for (let i = 1; i < this.levels.length; i++) {
         this.blur(renderer, this.levels[i - 1]!.a.texture, this.levels[i]!, optics.bloom.radius);
       }
