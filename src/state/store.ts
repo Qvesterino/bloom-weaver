@@ -136,7 +136,11 @@ export const useEditor = create<EditorState>((set, get) => ({
   loadRecipe: (recipe) => {
     const next = buildRecipe(recipe);
     get().commit(() => next, `Load recipe: ${next.name}`);
+    // land the user directly in the recipe's primary matter so editing can start
+    const firstMatter = next.objects.find((o) => o.type === "matter") ?? next.objects[0];
+    set({ selectedId: firstMatter?.id ?? null, activeRecipe: recipe });
   },
+
 
   openProject: async (id) => {
     const p = await persistence.loadProject(id);
