@@ -132,6 +132,25 @@ export class Engine {
     this.callbacks.onContextState?.("restored", "WebGL context restored");
   };
 
+  /** Rebind callbacks when a React host remounts and reuses this engine. */
+  setCallbacks(callbacks: EngineCallbacks): void {
+    this.callbacks = callbacks;
+    this.callbacks.onContextState?.(
+      this.isAlive() ? "created" : "lost",
+      this.isAlive() ? "WebGL2 context reused" : "WebGL context lost",
+    );
+  }
+
+  get element(): HTMLCanvasElement {
+    return this.canvas;
+  }
+
+  isAlive(): boolean {
+    return !this.disposed && !this.renderer.getContext().isContextLost();
+  }
+
+
+
 
   /* ------------------------------------------------------------------ state */
 
