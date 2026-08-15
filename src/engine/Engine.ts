@@ -424,17 +424,24 @@ export class Engine {
         if (f?.enabled) activeFields.add(id);
       });
     });
+    const info = this.renderer.info;
     this.callbacks.onStats?.({
       fps: this.fps,
       frameTime: this.frameTime,
       particles,
       cells,
       activeFields: activeFields.size,
-      drawCalls: this.renderer.info.render.calls,
+      drawCalls: info.render.calls,
       renderScale: this.project.viewport.renderScale,
       loopTime: this.loopTime,
+      geometries: info.memory.geometries,
+      textures: info.memory.textures,
+      programs: info.programs?.length ?? 0,
+      triangles: info.render.triangles,
+      points: info.render.points,
     });
   }
+
 
   /* ------------------------------------------------------------------ export */
 
