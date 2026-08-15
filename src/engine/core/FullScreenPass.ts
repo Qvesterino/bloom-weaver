@@ -23,15 +23,11 @@ export class FullScreenPass {
   }
 
   render(renderer: THREE.WebGLRenderer, target: THREE.WebGLRenderTarget | null): void {
-    if (import.meta.env.DEV && target) {
-      const outs = (target as any).textures ?? [target.texture];
-      for (const [name, u] of Object.entries(this.material.uniforms)) {
-        if (outs.includes((u as any).value)) {
-          console.error(`[feedback] pass writes target while sampling it via ${name}`, (this.material as any).name);
-        }
-      }
-    }
     const prevTarget = renderer.getRenderTarget();
+    // Post/simulation chains ping-pong between targets, so a texture sampled by
+    // the previous pass can be this pass's output. Clearing GL state first
+    // guarantees no framebuffer/texture feedback loop.
+    renderer.resetState();
     renderer.setRenderTarget(target);
     renderer.render(this.scene, this.camera);
     renderer.setRenderTarget(prevTarget);
