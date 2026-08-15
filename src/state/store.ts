@@ -47,6 +47,7 @@ interface EditorState {
   future: HistoryEntry[];
   hydrated: boolean;
   rebuilding: boolean;
+  activeRecipe: RecipeId | null;
   loopTime: number;
   savedProjects: Project[];
   /* ---- lifecycle */
@@ -101,6 +102,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   future: [],
   hydrated: false,
   rebuilding: false,
+  activeRecipe: null,
   loopTime: 0,
   savedProjects: [],
 
@@ -128,7 +130,7 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   newProject: (recipe) => {
     const project = buildRecipe(recipe);
-    set({ project, selectedId: null, past: [], future: [] });
+    set({ project, selectedId: null, past: [], future: [], activeRecipe: recipe });
     void persistence.saveProject(project);
     void get().refreshProjectList();
   },
