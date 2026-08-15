@@ -372,11 +372,7 @@ export class Engine {
 
     this.updateHelpers();
 
-    // Drop stale texture bindings from last frame's post chain so we never draw
-    // into a framebuffer whose texture is still bound to a sampler unit.
-    this.renderer.resetState();
     this.renderer.setRenderTarget(this.optics.scene);
-
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.clear(true, true, true);
     this.renderer.render(this.scene, this.camera);

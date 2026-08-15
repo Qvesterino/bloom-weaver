@@ -66,6 +66,7 @@ export function Viewport() {
       try {
         sharedEngine = new Engine(canvas, useEditor.getState().project, callbacks);
         sharedEngine.start();
+        if (import.meta.env.DEV) (window as any).__engine = sharedEngine;
         setError(null);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
