@@ -2,18 +2,21 @@ import { useEffect } from "react";
 import { Viewport } from "./Viewport";
 import { Inspector } from "./Inspector";
 import { GradientEditor } from "./GradientEditor";
+import { Outliner } from "./Outliner";
+import { Diagnostics } from "./Diagnostics";
 import { Button, Row, Section, Select, Slider, Toggle } from "./controls/Controls";
 import { useEditor } from "@/state/store";
 import { RECIPES, type RecipeId } from "@/domain/recipes";
 import { PALETTES } from "@/domain/color/palettes";
 
 export function Workspace() {
-  const { project, hydrate, loadRecipe, applyPalette, setPath, undo, redo, selectedId, select } =
+  const { project, hydrate, loadRecipe, applyPalette, setPath, undo, redo, activeRecipe } =
     useEditor();
 
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
+
 
   return (
     <div className="grain-overlay flex h-screen flex-col gap-2 bg-background p-2">
