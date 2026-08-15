@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import {
   Button,
   NumberInput,
@@ -107,7 +108,7 @@ export function Inspector() {
 }
 
 type Setter = (path: string, value: unknown, push?: boolean) => void;
-type Num = (path: string, value: number, min: number, max: number, step?: number) => JSX.Element;
+type Num = (path: string, value: number, min: number, max: number, step?: number) => ReactElement;
 
 function CameraFields({ object, set, num }: { object: CameraObject; set: Setter; num: Num }) {
   const c = object.config;
