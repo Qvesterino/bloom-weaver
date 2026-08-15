@@ -298,9 +298,16 @@ export class MatterSystem {
       E[i]!.set(c.octaves, 0, 0, 0);
     });
 
+    // The point material still samples last frame's textures, which are the
+    // targets we are about to write into. Unbind them first to avoid a
+    // framebuffer/texture feedback loop.
+    this.pointsMaterial.uniforms["uPosTex"]!.value = null;
+    this.pointsMaterial.uniforms["uVelTex"]!.value = null;
+
     this.simPass.render(renderer, write);
     this.pingIndex = 1 - this.pingIndex;
     this.needsInit = false;
+
 
     // ---- render-side uniforms
     const pu = this.pointsMaterial.uniforms;
