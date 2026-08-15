@@ -29,6 +29,7 @@ export function Viewport() {
 
   useEffect(() => {
     engineRef.current?.setProject(project);
+    engineRef.current?.syncCameraPosition();
   }, [project]);
 
   useEffect(() => {
