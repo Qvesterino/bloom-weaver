@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { Viewport } from "./Viewport";
+import { Inspector } from "./Inspector";
+import { GradientEditor } from "./GradientEditor";
 import { Button, Row, Section, Select, Slider, Toggle } from "./controls/Controls";
 import { useEditor } from "@/state/store";
 import { RECIPES, type RecipeId } from "@/domain/recipes";
@@ -79,6 +81,8 @@ export function Workspace() {
         </main>
 
         <aside className="panel min-h-0 overflow-y-auto">
+          <Inspector />
+          <GradientEditor />
           <Section title="Palette">
             <div className="grid gap-1">
               {PALETTES.slice(0, 8).map((p) => (
@@ -88,6 +92,7 @@ export function Workspace() {
               ))}
             </div>
           </Section>
+
           <Section title="Optics">
             <Row label="Bloom">
               <Toggle
