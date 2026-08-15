@@ -24,10 +24,6 @@ export class FullScreenPass {
 
   render(renderer: THREE.WebGLRenderer, target: THREE.WebGLRenderTarget | null): void {
     const prevTarget = renderer.getRenderTarget();
-    // Post/simulation chains ping-pong between targets, so a texture sampled by
-    // the previous pass can be this pass's output. Clearing GL state first
-    // guarantees no framebuffer/texture feedback loop.
-    renderer.resetState();
     renderer.setRenderTarget(target);
     renderer.render(this.scene, this.camera);
     renderer.setRenderTarget(prevTarget);
