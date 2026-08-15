@@ -535,6 +535,9 @@ export class Engine {
   dispose(): void {
     this.disposed = true;
     this.stop();
+    this.canvas.removeEventListener("webglcontextlost", this.onContextLost);
+    this.canvas.removeEventListener("webglcontextrestored", this.onContextRestored);
+
     this.systems.forEach((s) => {
       this.scene.remove(s.points);
       s.dispose();
