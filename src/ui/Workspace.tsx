@@ -2,18 +2,21 @@ import { useEffect } from "react";
 import { Viewport } from "./Viewport";
 import { Inspector } from "./Inspector";
 import { GradientEditor } from "./GradientEditor";
+import { Outliner } from "./Outliner";
+import { Diagnostics } from "./Diagnostics";
 import { Button, Row, Section, Select, Slider, Toggle } from "./controls/Controls";
 import { useEditor } from "@/state/store";
 import { RECIPES, type RecipeId } from "@/domain/recipes";
 import { PALETTES } from "@/domain/color/palettes";
 
 export function Workspace() {
-  const { project, hydrate, loadRecipe, applyPalette, setPath, undo, redo, selectedId, select } =
+  const { project, hydrate, loadRecipe, applyPalette, setPath, undo, redo, activeRecipe } =
     useEditor();
 
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
+
 
   return (
     <div className="grain-overlay flex h-screen flex-col gap-2 bg-background p-2">
@@ -22,6 +25,11 @@ export function Workspace() {
           Matter<span className="text-primary">Field</span>
         </h1>
         <span className="label-xs">{project.name}</span>
+        {activeRecipe ? (
+          <span className="rounded border border-primary/50 bg-primary/10 px-1.5 py-0.5 text-[0.6rem] text-primary">
+            editing recipe: {activeRecipe}
+          </span>
+        ) : null}
         <div className="ml-auto flex items-center gap-1.5">
           <Button variant="outline" size="xs" onClick={undo}>
             Undo
@@ -41,40 +49,39 @@ export function Workspace() {
 
       <div className="grid min-h-0 flex-1 grid-cols-[15rem_minmax(0,1fr)_17rem] gap-2">
         <aside className="panel min-h-0 overflow-y-auto">
-          <Section title="Scene">
-            <div className="space-y-1">
-              {project.objects.map((o) => (
-                <button
-                  key={o.id}
-                  type="button"
-                  onClick={() => select(o.id)}
-                  className={`focus-ring flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition-colors ${
-                    selectedId === o.id
-                      ? "bg-primary/15 text-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          <Outliner />
+          <Section title="Recipes">
+            <p className="mb-2 text-[0.65rem] text-muted-foreground">
+              Opening a recipe builds it from the shared primitives — every emitter, field, matter
+              and camera stays fully editable.
+            </p>
+            <div className="grid gap-1.5">
+              {RECIPES.map((r) => (
+                <div
+                  key={r.id}
+                  className={`rounded border px-2 py-1.5 ${
+                    activeRecipe === r.id ? "border-primary/60 bg-primary/10" : "border-border"
                   }`}
                 >
-                  <span className="numeric text-primary-dim">{o.type[0]!.toUpperCase()}</span>
-                  <span className="truncate">{o.name}</span>
-                </button>
-              ))}
-            </div>
-          </Section>
-          <Section title="Recipes">
-            <div className="grid gap-1">
-              {RECIPES.map((r) => (
-                <Button
-                  key={r.id}
-                  variant="outline"
-                  size="xs"
-                  onClick={() => loadRecipe(r.id as RecipeId)}
-                >
-                  {r.name}
-                </Button>
+                  <div className="flex items-center gap-2">
+                    <span className="flex-1 truncate text-xs text-foreground">{r.name}</span>
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={() => loadRecipe(r.id as RecipeId)}
+                    >
+                      {activeRecipe === r.id ? "Reload" : "Open"}
+                    </Button>
+                  </div>
+                  <p className="mt-1 text-[0.6rem] leading-snug text-muted-foreground">
+                    {r.description}
+                  </p>
+                </div>
               ))}
             </div>
           </Section>
         </aside>
+
 
         <main className="min-h-0">
           <Viewport />
@@ -150,6 +157,7 @@ export function Workspace() {
               />
             </Row>
           </Section>
+          <Diagnostics />
         </aside>
       </div>
     </div>

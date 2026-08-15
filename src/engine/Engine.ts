@@ -22,7 +22,15 @@ export interface EngineStats {
   drawCalls: number;
   renderScale: number;
   loopTime: number;
+  /** GPU resource accounting straight from the renderer. */
+  geometries: number;
+  textures: number;
+  programs: number;
+  triangles: number;
+  points: number;
 }
+
+export type ContextState = "created" | "lost" | "restored" | "failed";
 
 const QUALITY_SCALE: Record<QualityMode, number> = {
   draft: 0.6,
@@ -40,7 +48,9 @@ export interface EngineCallbacks {
   onLoopTime?: (t: number) => void;
   onCameraMoved?: (position: { x: number; y: number; z: number }) => void;
   onError?: (message: string) => void;
+  onContextState?: (state: ContextState, message: string) => void;
 }
+
 
 /**
  * Renderer-owned runtime. Owns the animation loop, the GPU resources and every
@@ -107,7 +117,21 @@ export class Engine {
     this.optics = new Optics(size.width, size.height);
     this.syncSystems();
     this.applyCameraConfig(true);
+    canvas.addEventListener("webglcontextlost", this.onContextLost);
+    canvas.addEventListener("webglcontextrestored", this.onContextRestored);
+    this.callbacks.onContextState?.("created", "WebGL2 context created");
   }
+
+  private onContextLost = (event: Event) => {
+    event.preventDefault();
+    this.callbacks.onContextState?.("lost", "WebGL context lost — GPU released the drawing buffer");
+    this.stop();
+  };
+
+  private onContextRestored = () => {
+    this.callbacks.onContextState?.("restored", "WebGL context restored");
+  };
+
 
   /* ------------------------------------------------------------------ state */
 
@@ -414,17 +438,24 @@ export class Engine {
         if (f?.enabled) activeFields.add(id);
       });
     });
+    const info = this.renderer.info;
     this.callbacks.onStats?.({
       fps: this.fps,
       frameTime: this.frameTime,
       particles,
       cells,
       activeFields: activeFields.size,
-      drawCalls: this.renderer.info.render.calls,
+      drawCalls: info.render.calls,
       renderScale: this.project.viewport.renderScale,
       loopTime: this.loopTime,
+      geometries: info.memory.geometries,
+      textures: info.memory.textures,
+      programs: info.programs?.length ?? 0,
+      triangles: info.render.triangles,
+      points: info.render.points,
     });
   }
+
 
   /* ------------------------------------------------------------------ export */
 
@@ -504,6 +535,9 @@ export class Engine {
   dispose(): void {
     this.disposed = true;
     this.stop();
+    this.canvas.removeEventListener("webglcontextlost", this.onContextLost);
+    this.canvas.removeEventListener("webglcontextrestored", this.onContextRestored);
+
     this.systems.forEach((s) => {
       this.scene.remove(s.points);
       s.dispose();

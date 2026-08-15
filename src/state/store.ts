@@ -47,6 +47,7 @@ interface EditorState {
   future: HistoryEntry[];
   hydrated: boolean;
   rebuilding: boolean;
+  activeRecipe: RecipeId | null;
   loopTime: number;
   savedProjects: Project[];
   /* ---- lifecycle */
@@ -101,6 +102,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   future: [],
   hydrated: false,
   rebuilding: false,
+  activeRecipe: null,
   loopTime: 0,
   savedProjects: [],
 
@@ -128,7 +130,7 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   newProject: (recipe) => {
     const project = buildRecipe(recipe);
-    set({ project, selectedId: null, past: [], future: [] });
+    set({ project, selectedId: null, past: [], future: [], activeRecipe: recipe });
     void persistence.saveProject(project);
     void get().refreshProjectList();
   },
@@ -136,7 +138,11 @@ export const useEditor = create<EditorState>((set, get) => ({
   loadRecipe: (recipe) => {
     const next = buildRecipe(recipe);
     get().commit(() => next, `Load recipe: ${next.name}`);
+    // land the user directly in the recipe's primary matter so editing can start
+    const firstMatter = next.objects.find((o) => o.type === "matter") ?? next.objects[0];
+    set({ selectedId: firstMatter?.id ?? null, activeRecipe: recipe });
   },
+
 
   openProject: async (id) => {
     const p = await persistence.loadProject(id);
@@ -199,8 +205,11 @@ export const useEditor = create<EditorState>((set, get) => ({
     ),
 
   addObject: (type, kind) => {
-    get().commit((p) => ({ ...p, objects: [...p.objects, buildObject(type, kind)] }), `Add ${kind}`);
+    const obj = buildObject(type, kind);
+    get().commit((p) => ({ ...p, objects: [...p.objects, obj] }), `Add ${kind}`);
+    set({ selectedId: obj.id });
   },
+
 
 
   deleteObject: (id) =>

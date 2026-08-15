@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Engine, type EngineStats } from "@/engine/Engine";
+import { Engine } from "@/engine/Engine";
 import { useEditor } from "@/state/store";
+import { useDiagnostics } from "@/state/diagnostics";
 
 export function Viewport() {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -8,12 +9,13 @@ export function Viewport() {
   const project = useEditor((s) => s.project);
   const selectedId = useEditor((s) => s.selectedId);
   const setLoopTime = useEditor((s) => s.setLoopTime);
-  const [stats, setStats] = useState<EngineStats | null>(null);
+  const stats = useDiagnostics((s) => s.stats);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
+    const diag = useDiagnostics.getState();
     // A canvas can only ever hold one WebGL context, so each engine instance gets
     // a brand-new canvas. Reusing a React-owned canvas across mounts (StrictMode,
     // HMR) makes context creation fail and leaks GPU memory.
@@ -24,15 +26,21 @@ export function Viewport() {
     let engine: Engine | null = null;
     try {
       engine = new Engine(canvas, useEditor.getState().project, {
-        onStats: setStats,
+        onStats: diag.setStats,
         onLoopTime: setLoopTime,
-        onError: setError,
+        onError: (message) => {
+          setError(message);
+          diag.log("error", message);
+        },
+        onContextState: diag.setContext,
       });
       engineRef.current = engine;
       engine.start();
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
+      diag.setContext("failed", message);
     }
     return () => {
       engine?.dispose();
@@ -60,6 +68,7 @@ export function Viewport() {
           <div>{stats.fps.toFixed(0)} fps · {stats.frameTime.toFixed(1)} ms</div>
           <div>{stats.particles.toLocaleString()} particles</div>
           <div>{stats.cells.toLocaleString()} cells · {stats.activeFields} fields</div>
+          <div>{stats.textures} tex · {stats.geometries} buf · {stats.drawCalls} calls</div>
           <div>scale {stats.renderScale} · {project.viewport.quality}</div>
         </div>
       ) : null}
