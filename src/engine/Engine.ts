@@ -515,3 +515,29 @@ function gradientFor(project: Project, matter: MatterObject) {
   const index = Math.min(matter.config.gradientIndex, maxIndex);
   return project.color.gradients[index] ?? project.color.gradients[0];
 }
+
+/**
+ * Robust WebGL2 context creation. Some browsers/tabs refuse a context with the
+ * preferred attributes (or have exhausted their context budget), so we retry
+ * with progressively cheaper attributes instead of hard-crashing the app.
+ */
+function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
+  const variants: THREE.WebGLRendererParameters[] = [
+    { antialias: false, alpha: true, powerPreference: "high-performance" },
+    { antialias: false, alpha: true, powerPreference: "default" },
+    { antialias: false, alpha: false, powerPreference: "default", failIfMajorPerformanceCaveat: false },
+  ];
+  let lastError: unknown = null;
+  for (const params of variants) {
+    try {
+      return new THREE.WebGLRenderer({ canvas, preserveDrawingBuffer: false, ...params });
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw new Error(
+    `WebGL2 is unavailable in this browser tab. Close other 3D tabs and reload. (${
+      lastError instanceof Error ? lastError.message : String(lastError)
+    })`,
+  );
+}
