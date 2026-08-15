@@ -3,7 +3,7 @@ import { Engine, type EngineStats } from "@/engine/Engine";
 import { useEditor } from "@/state/store";
 
 export function Viewport() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Engine | null>(null);
   const project = useEditor((s) => s.project);
   const selectedId = useEditor((s) => s.selectedId);
@@ -12,18 +12,32 @@ export function Viewport() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const engine = new Engine(canvas, useEditor.getState().project, {
-      onStats: setStats,
-      onLoopTime: setLoopTime,
-      onError: setError,
-    });
-    engineRef.current = engine;
-    engine.start();
+    const host = hostRef.current;
+    if (!host) return;
+    // A canvas can only ever hold one WebGL context, so each engine instance gets
+    // a brand-new canvas. Reusing a React-owned canvas across mounts (StrictMode,
+    // HMR) makes context creation fail and leaks GPU memory.
+    const canvas = document.createElement("canvas");
+    canvas.className = "block h-full w-full";
+    host.appendChild(canvas);
+
+    let engine: Engine | null = null;
+    try {
+      engine = new Engine(canvas, useEditor.getState().project, {
+        onStats: setStats,
+        onLoopTime: setLoopTime,
+        onError: setError,
+      });
+      engineRef.current = engine;
+      engine.start();
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
     return () => {
-      engine.dispose();
+      engine?.dispose();
       engineRef.current = null;
+      canvas.remove();
     };
   }, [setLoopTime]);
 
@@ -37,8 +51,10 @@ export function Viewport() {
   }, [selectedId]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-lg border border-border bg-surface-sunken">
-      <canvas ref={canvasRef} className="block h-full w-full" />
+    <div
+      ref={hostRef}
+      className="relative h-full w-full overflow-hidden rounded-lg border border-border bg-surface-sunken"
+    >
       {project.viewport.diagnostics && stats ? (
         <div className="numeric pointer-events-none absolute top-3 left-3 space-y-0.5 rounded-md border border-border bg-background/70 px-2.5 py-2 text-muted-foreground backdrop-blur">
           <div>{stats.fps.toFixed(0)} fps · {stats.frameTime.toFixed(1)} ms</div>
